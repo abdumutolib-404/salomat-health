@@ -2,11 +2,13 @@
 
 import type React from "react"
 import { useState } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Link, useNavigate } from "react-router-dom"
+import { useAuth } from "../../contexts/AuthContext"
+import { useLanguage } from "../../contexts/LanguageContext"
+import { Button } from "../../components/ui/Button"
+import { Input } from "../../components/ui/Input"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/Card"
+import { useToast } from "../../hooks/useToast"
 import { User, Stethoscope, Eye, EyeOff, ArrowLeft, ArrowRight } from "lucide-react"
 
 const specializations = [
@@ -22,7 +24,7 @@ const specializations = [
   "General Practitioner",
 ]
 
-export default function SignUpPage() {
+export const SignUpPage: React.FC = () => {
   const [step, setStep] = useState(1)
   const [role, setRole] = useState<"patient" | "doctor" | null>(null)
   const [formData, setFormData] = useState({
@@ -45,54 +47,57 @@ export default function SignUpPage() {
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const router = useRouter()
+  const { signUp } = useAuth()
+  const { t } = useLanguage()
+  const { toast } = useToast()
+  const navigate = useNavigate()
 
   const validateStep = (currentStep: number): boolean => {
     const newErrors: Record<string, string> = {}
 
     if (currentStep === 1) {
       if (!role) {
-        newErrors.role = "Please select a role"
+        newErrors.role = t("error.requiredField")
       }
     }
 
     if (currentStep === 2) {
       if (!formData.firstName.trim()) {
-        newErrors.firstName = "First name is required"
+        newErrors.firstName = t("error.requiredField")
       }
       if (!formData.lastName.trim()) {
-        newErrors.lastName = "Last name is required"
+        newErrors.lastName = t("error.requiredField")
       }
       if (!formData.email.trim()) {
-        newErrors.email = "Email is required"
+        newErrors.email = t("error.requiredField")
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-        newErrors.email = "Invalid email format"
+        newErrors.email = t("error.invalidEmail")
       }
       if (!formData.password) {
-        newErrors.password = "Password is required"
+        newErrors.password = t("error.requiredField")
       } else if (formData.password.length < 8) {
-        newErrors.password = "Password must be at least 8 characters"
+        newErrors.password = t("error.weakPassword")
       }
       if (formData.password !== formData.confirmPassword) {
-        newErrors.confirmPassword = "Passwords do not match"
+        newErrors.confirmPassword = t("error.passwordMismatch")
       }
 
       if (role === "doctor") {
         if (!formData.specialization) {
-          newErrors.specialization = "Specialization is required"
+          newErrors.specialization = t("error.requiredField")
         }
         if (!formData.experience) {
-          newErrors.experience = "Experience is required"
+          newErrors.experience = t("error.requiredField")
         }
       }
     }
 
     if (currentStep === 3) {
       if (!formData.termsAccepted) {
-        newErrors.terms = "You must accept the terms of service"
+        newErrors.terms = t("error.requiredField")
       }
       if (!formData.privacyAccepted) {
-        newErrors.privacy = "You must accept the privacy policy"
+        newErrors.privacy = t("error.requiredField")
       }
     }
 
@@ -112,15 +117,35 @@ export default function SignUpPage() {
 
     setLoading(true)
     try {
-      // TODO: Implement actual signup logic with Firebase
-      console.log("Signup data:", { ...formData, role })
+      await signUp({
+        email: formData.email,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        role,
+        phone: formData.phone || undefined,
+        age: formData.age ? Number.parseInt(formData.age) : undefined,
+        specialization: role === "doctor" ? formData.specialization : undefined,
+        experience: role === "doctor" ? Number.parseInt(formData.experience) : undefined,
+        bio: role === "doctor" ? formData.bio : undefined,
+        consultationFee: role === "doctor" ? Number.parseFloat(formData.consultationFee) : undefined,
+        termsAccepted: formData.termsAccepted,
+        privacyAccepted: formData.privacyAccepted,
+      })
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      toast({
+        title: "Success",
+        description: "Account created successfully. Please verify your email.",
+        type: "success",
+      })
 
-      router.push("/auth/verify-email")
+      navigate("/auth/verify-email")
     } catch (error: any) {
-      console.error("Signup error:", error)
+      toast({
+        title: "Error",
+        description: error.message,
+        type: "error",
+      })
     } finally {
       setLoading(false)
     }
@@ -130,7 +155,7 @@ export default function SignUpPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-2xl">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Create Account</CardTitle>
+          <CardTitle className="text-2xl">{t("auth.signup")}</CardTitle>
           <CardDescription>Step {step} of 3 - Create your account to get started</CardDescription>
 
           {/* Progress Bar */}
@@ -167,7 +192,7 @@ export default function SignUpPage() {
                   }`}
                 >
                   <User className="h-12 w-12 mx-auto mb-4 text-primary" />
-                  <h4 className="font-medium mb-2">Patient</h4>
+                  <h4 className="font-medium mb-2">{t("auth.patient")}</h4>
                   <p className="text-sm text-gray-600 dark:text-gray-300">
                     I'm looking for medical care and consultations
                   </p>
@@ -182,7 +207,7 @@ export default function SignUpPage() {
                   }`}
                 >
                   <Stethoscope className="h-12 w-12 mx-auto mb-4 text-primary" />
-                  <h4 className="font-medium mb-2">Doctor</h4>
+                  <h4 className="font-medium mb-2">{t("auth.doctor")}</h4>
                   <p className="text-sm text-gray-600 dark:text-gray-300">
                     I'm a healthcare professional providing care
                   </p>
@@ -202,45 +227,36 @@ export default function SignUpPage() {
           {step === 2 && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">First Name</label>
-                  <Input
-                    value={formData.firstName}
-                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                    className={errors.firstName ? "border-red-500" : ""}
-                  />
-                  {errors.firstName && <p className="text-sm text-red-600 mt-1">{errors.firstName}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Last Name</label>
-                  <Input
-                    value={formData.lastName}
-                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                    className={errors.lastName ? "border-red-500" : ""}
-                  />
-                  {errors.lastName && <p className="text-sm text-red-600 mt-1">{errors.lastName}</p>}
-                </div>
+                <Input
+                  label={t("auth.firstName")}
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  error={errors.firstName}
+                />
+                <Input
+                  label={t("auth.lastName")}
+                  value={formData.lastName}
+                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  error={errors.lastName}
+                />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Email</label>
-                <Input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className={errors.email ? "border-red-500" : ""}
-                />
-                {errors.email && <p className="text-sm text-red-600 mt-1">{errors.email}</p>}
-              </div>
+              <Input
+                label={t("auth.email")}
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                error={errors.email}
+              />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="relative">
-                  <label className="block text-sm font-medium mb-2">Password</label>
                   <Input
+                    label={t("auth.password")}
                     type={showPassword ? "text" : "password"}
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className={errors.password ? "border-red-500" : ""}
+                    error={errors.password}
                   />
                   <button
                     type="button"
@@ -249,16 +265,15 @@ export default function SignUpPage() {
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
-                  {errors.password && <p className="text-sm text-red-600 mt-1">{errors.password}</p>}
                 </div>
 
                 <div className="relative">
-                  <label className="block text-sm font-medium mb-2">Confirm Password</label>
                   <Input
+                    label={t("auth.confirmPassword")}
                     type={showConfirmPassword ? "text" : "password"}
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    className={errors.confirmPassword ? "border-red-500" : ""}
+                    error={errors.confirmPassword}
                   />
                   <button
                     type="button"
@@ -267,24 +282,22 @@ export default function SignUpPage() {
                   >
                     {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
-                  {errors.confirmPassword && <p className="text-sm text-red-600 mt-1">{errors.confirmPassword}</p>}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Phone (Optional)</label>
-                  <Input value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
-                </div>
+                <Input
+                  label={`${t("auth.phone")} (Optional)`}
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                />
                 {role === "patient" && (
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Age (Optional)</label>
-                    <Input
-                      type="number"
-                      value={formData.age}
-                      onChange={(e) => setFormData({ ...formData, age: e.target.value })}
-                    />
-                  </div>
+                  <Input
+                    label={`${t("auth.age")} (Optional)`}
+                    type="number"
+                    value={formData.age}
+                    onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                  />
                 )}
               </div>
 
@@ -292,7 +305,7 @@ export default function SignUpPage() {
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2">Specialization</label>
+                      <label className="block text-sm font-medium mb-2">{t("auth.specialization")}</label>
                       <select
                         value={formData.specialization}
                         onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
@@ -308,20 +321,17 @@ export default function SignUpPage() {
                       {errors.specialization && <p className="text-sm text-red-600 mt-1">{errors.specialization}</p>}
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Years of Experience</label>
-                      <Input
-                        type="number"
-                        value={formData.experience}
-                        onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
-                        className={errors.experience ? "border-red-500" : ""}
-                      />
-                      {errors.experience && <p className="text-sm text-red-600 mt-1">{errors.experience}</p>}
-                    </div>
+                    <Input
+                      label={t("auth.experience")}
+                      type="number"
+                      value={formData.experience}
+                      onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
+                      error={errors.experience}
+                    />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">Bio (Optional)</label>
+                    <label className="block text-sm font-medium mb-2">{t("auth.bio")} (Optional)</label>
                     <textarea
                       value={formData.bio}
                       onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
@@ -331,15 +341,13 @@ export default function SignUpPage() {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Consultation Fee (USD, Optional)</label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={formData.consultationFee}
-                      onChange={(e) => setFormData({ ...formData, consultationFee: e.target.value })}
-                    />
-                  </div>
+                  <Input
+                    label={`${t("auth.consultationFee")} (USD, Optional)`}
+                    type="number"
+                    step="0.01"
+                    value={formData.consultationFee}
+                    onChange={(e) => setFormData({ ...formData, consultationFee: e.target.value })}
+                  />
                 </>
               )}
 
@@ -377,11 +385,11 @@ export default function SignUpPage() {
                   />
                   <div>
                     <label htmlFor="terms" className="text-sm font-medium">
-                      I accept the Terms of Service
+                      {t("auth.termsAccept")}
                     </label>
                     <p className="text-xs text-gray-600 dark:text-gray-300">
                       You agree to our{" "}
-                      <Link href="/terms" className="text-primary hover:underline">
+                      <Link to="/terms" className="text-primary hover:underline">
                         Terms of Service
                       </Link>
                     </p>
@@ -399,11 +407,11 @@ export default function SignUpPage() {
                   />
                   <div>
                     <label htmlFor="privacy" className="text-sm font-medium">
-                      I accept the Privacy Policy
+                      {t("auth.privacyAccept")}
                     </label>
                     <p className="text-xs text-gray-600 dark:text-gray-300">
                       You agree to our{" "}
-                      <Link href="/privacy" className="text-primary hover:underline">
+                      <Link to="/privacy" className="text-primary hover:underline">
                         Privacy Policy
                       </Link>
                     </p>
@@ -418,8 +426,8 @@ export default function SignUpPage() {
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back
                   </Button>
-                  <Button type="submit" className="flex-1" disabled={loading}>
-                    {loading ? "Creating Account..." : "Create Account"}
+                  <Button type="submit" className="flex-1" loading={loading}>
+                    Create Account
                   </Button>
                 </div>
               </form>
@@ -429,7 +437,7 @@ export default function SignUpPage() {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600 dark:text-gray-300">
               Already have an account?{" "}
-              <Link href="/auth/login" className="text-primary hover:underline">
+              <Link to="/auth/login" className="text-primary hover:underline">
                 Sign in
               </Link>
             </p>

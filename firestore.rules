@@ -1,0 +1,111 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can read/write their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Doctors can read basic info of their patients
+      allow read: if request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor';
+      // Admins can read/write all user data
+      allow read, write: if request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Chat messages
+    match /chats/{chatId} {
+      allow read, write: if request.auth != null && (
+        resource.data.patientId == request.auth.uid ||
+        resource.data.doctorId == request.auth.uid
+      );
+    }
+
+    match /chats/{chatId}/messages/{messageId} {
+      allow read, write: if request.auth != null && (
+        get(/databases/$(database)/documents/chats/$(chatId)).data.patientId == request.auth.uid ||
+        get(/databases/$(database)/documents/chats/$(chatId)).data.doctorId == request.auth.uid
+      );
+    }
+
+    // AI Chats - users can only access their own
+    match /ai_chats/{chatId} {
+      allow read, write: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Appointments
+    match /appointments/{appointmentId} {
+      allow read, write: if request.auth != null && (
+        resource.data.patientId == request.auth.uid ||
+        resource.data.doctorId == request.auth.uid
+      );
+    }
+
+    // Prescriptions
+    match /prescriptions/{prescriptionId} {
+      allow read: if request.auth != null && (
+        resource.data.patientId == request.auth.uid ||
+        resource.data.doctorId == request.auth.uid
+      );
+      allow write: if request.auth != null && resource.data.doctorId == request.auth.uid;
+    }
+
+    // Reminders - users can only access their own
+    match /reminders/{reminderId} {
+      allow read, write: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Reviews
+    match /reviews/{reviewId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && resource.data.patientId == request.auth.uid;
+    }
+
+    // Notifications - users can only access their own
+    match /notifications/{notificationId} {
+      allow read, write: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Analysis uploads
+    match /analysis/{analysisId} {
+      allow read, write: if request.auth != null && (
+        resource.data.patientId == request.auth.uid ||
+        resource.data.doctorId == request.auth.uid
+      );
+    }
+
+    // AI Models - read only for authenticated users, write for admins
+    match /models/{modelId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Subscriptions - users can read their own, admins can read/write all
+    match /subscriptions/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Logs - admin only
+    match /logs/{logId} {
+      allow read, write: if request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // OTPs - no direct access (handled by Cloud Functions)
+    match /otps/{email} {
+      allow read, write: if false;
+    }
+
+    // Transactions - no direct access (handled by Cloud Functions)
+    match /transactions/{transactionId} {
+      allow read, write: if false;
+    }
+  }
+}

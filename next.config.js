@@ -7,8 +7,12 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
+    domains: ["placeholder.svg"],
     unoptimized: true,
+  },
+  experimental: {
+    appDir: true,
   },
 }
 
-export default nextConfig
+module.exports = nextConfig

@@ -1,0 +1,36 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Profile pictures
+    match /profile_pictures/{userId}/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId
+        && request.resource.size < 5 * 1024 * 1024 // 5MB limit
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // Analysis files
+    match /analysis/{userId}/{allPaths=**} {
+      allow read: if request.auth != null && (
+        request.auth.uid == userId ||
+        // Doctors can read analysis files of their patients
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor'
+      );
+      allow write: if request.auth != null && request.auth.uid == userId
+        && request.resource.size < 10 * 1024 * 1024 // 10MB limit
+        && (request.resource.contentType.matches('image/.*') || 
+            request.resource.contentType.matches('application/pdf'));
+    }
+
+    // Chat images
+    match /chat_images/{chatId}/{allPaths=**} {
+      allow read, write: if request.auth != null &&
+        (exists(/databases/$(database)/documents/chats/$(chatId)) &&
+         (get(/databases/$(database)/documents/chats/$(chatId)).data.patientId == request.auth.uid ||
+          get(/databases/$(database)/documents/chats/$(chatId)).data.doctorId == request.auth.uid))
+        && request.resource.size < 5 * 1024 * 1024 // 5MB limit
+        && request.resource.contentType.matches('image/.*');
+    }
+  }
+}

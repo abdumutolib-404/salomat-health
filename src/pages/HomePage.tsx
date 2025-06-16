@@ -1,46 +1,52 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+"use client"
+
+import type React from "react"
+import { Link } from "react-router-dom"
+import { useLanguage } from "../contexts/LanguageContext"
+import { Button } from "../components/ui/Button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/Card"
 import { Stethoscope, Clock, Shield, Star, ArrowRight, Heart, Brain, Eye, Smartphone } from "lucide-react"
 
-const features = [
-  {
-    icon: <Stethoscope className="h-8 w-8 text-primary" />,
-    title: "Expert Doctors",
-    description: "Connect with certified healthcare professionals from around the world",
-  },
-  {
-    icon: <Clock className="h-8 w-8 text-primary" />,
-    title: "24/7 Availability",
-    description: "Get medical consultation anytime, anywhere with our round-the-clock service",
-  },
-  {
-    icon: <Shield className="h-8 w-8 text-primary" />,
-    title: "Secure & Private",
-    description: "Your health data is protected with enterprise-grade security and encryption",
-  },
-  {
-    icon: <Smartphone className="h-8 w-8 text-primary" />,
-    title: "AI-Powered",
-    description: "Get instant health insights with our advanced AI health assistant",
-  },
-]
+export const HomePage: React.FC = () => {
+  const { t } = useLanguage()
 
-const specialties = [
-  { icon: <Heart className="h-6 w-6" />, name: "Cardiology", count: "25+ Doctors" },
-  { icon: <Brain className="h-6 w-6" />, name: "Neurology", count: "18+ Doctors" },
-  { icon: <Eye className="h-6 w-6" />, name: "Ophthalmology", count: "15+ Doctors" },
-  { icon: <Stethoscope className="h-6 w-6" />, name: "General Medicine", count: "40+ Doctors" },
-]
+  const features = [
+    {
+      icon: <Stethoscope className="h-8 w-8 text-primary" />,
+      title: "Expert Doctors",
+      description: "Connect with certified healthcare professionals from around the world",
+    },
+    {
+      icon: <Clock className="h-8 w-8 text-primary" />,
+      title: "24/7 Availability",
+      description: "Get medical consultation anytime, anywhere with our round-the-clock service",
+    },
+    {
+      icon: <Shield className="h-8 w-8 text-primary" />,
+      title: "Secure & Private",
+      description: "Your health data is protected with enterprise-grade security and encryption",
+    },
+    {
+      icon: <Smartphone className="h-8 w-8 text-primary" />,
+      title: "AI-Powered",
+      description: "Get instant health insights with our advanced AI health assistant",
+    },
+  ]
 
-const stats = [
-  { number: "10,000+", label: "Happy Patients" },
-  { number: "500+", label: "Expert Doctors" },
-  { number: "50+", label: "Specialties" },
-  { number: "99.9%", label: "Uptime" },
-]
+  const specialties = [
+    { icon: <Heart className="h-6 w-6" />, name: "Cardiology", count: "25+ Doctors" },
+    { icon: <Brain className="h-6 w-6" />, name: "Neurology", count: "18+ Doctors" },
+    { icon: <Eye className="h-6 w-6" />, name: "Ophthalmology", count: "15+ Doctors" },
+    { icon: <Stethoscope className="h-6 w-6" />, name: "General Medicine", count: "40+ Doctors" },
+  ]
 
-export default function HomePage() {
+  const stats = [
+    { number: "10,000+", label: "Happy Patients" },
+    { number: "500+", label: "Expert Doctors" },
+    { number: "50+", label: "Specialties" },
+    { number: "99.9%", label: "Uptime" },
+  ]
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -61,13 +67,13 @@ export default function HomePage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/auth/signup">
+                <Link to="/auth/signup">
                   <Button size="lg" className="w-full sm:w-auto">
                     Get Started Free
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
-                <Link href="/doctors">
+                <Link to="/doctors">
                   <Button variant="outline" size="lg" className="w-full sm:w-auto">
                     Find a Doctor
                   </Button>
@@ -100,11 +106,7 @@ export default function HomePage() {
             {/* Hero Image */}
             <div className="relative">
               <div className="relative z-10">
-                <img
-                  src="/placeholder.svg?height=400&width=600"
-                  alt="Healthcare professionals"
-                  className="rounded-2xl shadow-2xl"
-                />
+                <img src="/api/placeholder/600/400" alt="Healthcare professionals" className="rounded-2xl shadow-2xl" />
               </div>
               <div className="absolute -top-4 -right-4 w-72 h-72 bg-primary/20 rounded-full blur-3xl"></div>
               <div className="absolute -bottom-4 -left-4 w-72 h-72 bg-blue-500/20 rounded-full blur-3xl"></div>
@@ -171,7 +173,7 @@ export default function HomePage() {
             {specialties.map((specialty, index) => (
               <Link
                 key={index}
-                href="/doctors"
+                to="/doctors"
                 className="group p-6 bg-gray-50 dark:bg-gray-800 rounded-xl hover:bg-primary/5 transition-colors"
               >
                 <div className="flex items-center space-x-4">
@@ -188,7 +190,7 @@ export default function HomePage() {
           </div>
 
           <div className="text-center mt-12">
-            <Link href="/doctors">
+            <Link to="/doctors">
               <Button size="lg">
                 View All Specialties
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -246,12 +248,12 @@ export default function HomePage() {
             Join thousands of patients who trust Salomat.health for their healthcare needs
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/auth/signup">
+            <Link to="/auth/signup">
               <Button size="lg" variant="secondary">
                 Get Started Free
               </Button>
             </Link>
-            <Link href="/doctors">
+            <Link to="/doctors">
               <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-primary">
                 Find a Doctor
               </Button>
